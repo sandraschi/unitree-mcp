@@ -1,0 +1,20 @@
+{
+  "manifest_version": "0.3",
+  "name": "unitree-mcp",
+  "version": "0.1.0",
+  "description": "FastMCP wrapper for Unitree Robotics open-source stack (Go2, H1, G1, B2, etc.)",
+  "author": { "name": "Sandra Schipal", "url": "https://github.com/sandraschi" },
+  "repository": { "type": "git", "url": "https://github.com/sandraschi/unitree-mcp.git" },
+  "homepage": "https://github.com/sandraschi/unitree-mcp",
+  "license": "Apache 2.0",
+  "keywords": ["mcp", "model-context-protocol", "fastmcp", "unitree", "robotics", "quadruped"],
+  "server": {
+    "type": "python",
+    "entry_point": "src/unitree_mcp/server.py",
+    "mcp_config": {
+      "command": "python",
+      "args": ["-m", "unitree_mcp.server"],
+      "env": { "PYTHONPATH": "${__dirname}/src", "PYTHONUNBUFFERED": "1" }
+    }
+  }
+}

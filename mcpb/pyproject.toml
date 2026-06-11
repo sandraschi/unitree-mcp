@@ -1,0 +1,21 @@
+[project]
+name = "unitree-mcp"
+version = "0.1.0"
+description = "FastMCP wrapper for Unitree Robotics open-source stack (Go2, H1, G1, B2, etc.)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastmcp>=3.2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+]
+
+[project.scripts]
+unitree-mcp = "unitree_mcp.server:main"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
