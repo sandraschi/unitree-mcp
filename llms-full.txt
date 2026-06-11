@@ -1,0 +1,23 @@
+# unitree-mcp — Full Context
+
+## Server
+- Name: unitree-mcp
+- 14 tools: sim_status, load_model, start_sim, stop_sim, get_state, apply_control, list_models, list_jobs, export_frame, agentic_sim_workflow, natural_language_control, analyze_sim_state, analyze_sim_logs, discover_model
+
+## Web Dashboard
+- Backend: uv -> uvicorn web_sota.backend.server:app —port 11052
+- Frontend: npx vite --port 11053 --host
+- API proxy: /api -> 127.0.0.1:11052
+
+## External Repos
+- D:\Dev\repos\external\unitree_mujoco (MuJoCo models + Python sim)
+- D:\Dev\repos\external\unitree_ros2 (ROS 2 Humble packages)
+
+## Models
+Unitree robot models in unitree_mujoco/unitree_robots/{robot}/scene.xml
+
+## Commands
+uv sync
+uv run pytest tests/ -q
+uv run python -m unitree_mcp
+.\web_sota\start.ps1

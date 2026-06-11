@@ -1,0 +1,9 @@
+# unitree-mcp
+
+FastMCP 3.2 wrapper for Unitree Robotics open-source stack.
+
+Ports: 11052 (backend), 11053 (frontend)
+Tools: 14 (9 sim + 5 AI)
+Models: go2, go2w, b2, b2w, h1, h1_2, g1, h2, a2, r1
+
+See README.md for full documentation.
