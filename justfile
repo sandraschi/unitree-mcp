@@ -5,13 +5,22 @@ serve:
     uv run python -m unitree_mcp
 
 lint:
-    C:\Users\sandr\AppData\Local\Programs\Python\Python313\Scripts\ruff.exe check src/
+    ruff check src/ web_sota/backend/
 
 fix:
-    C:\Users\sandr\AppData\Local\Programs\Python\Python313\Scripts\ruff.exe check --fix src/
+    ruff check --fix src/ web_sota/backend/
+
+test:
+    uv run pytest tests/ -q
+
+e2e:
+    cd web_sota && npx playwright test
 
 web:
-    pwsh -NoProfile -File .\web_sota\start.ps1
+    pwsh -NoProfile -File ./web_sota/start.ps1
 
-status:
-    pwsh -NoProfile -c "uv run --directory . python -c \"import sys; sys.path.insert(0, 'src'); from unitree_mcp.server import mcp; print(f'Server: {mcp.name}')\""
+mcpb-pack:
+    pwsh -NoProfile -File ./mcpb/pack.ps1
+
+clean:
+    pwsh -NoProfile -c "Remove-Item -Recurse -Force -Path dist,.venv,__pycache__ -ErrorAction SilentlyContinue"
