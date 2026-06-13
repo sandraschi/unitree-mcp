@@ -1,6 +1,7 @@
 """FastAPI backend for the unitree-mcp web dashboard."""
 
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -15,8 +16,21 @@ from web_sota.backend.routes.logging import router as logging_router
 from web_sota.backend.routes.llm import router as llm_router
 from web_sota.backend.routes.settings import router as settings_router
 from web_sota.backend.routes.ai import router as ai_router
+from web_sota.backend.log_buffer import activity_log
 
-app = FastAPI(title="unitree-mcp")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.activity_log = activity_log
+    log_dir = Path(__file__).resolve().parent.parent.parent / "logs"
+    log_dir.mkdir(exist_ok=True)
+    activity_log.start_file_watch(log_dir / "server.log")
+    activity_log.info("server", "Server started")
+    yield
+    activity_log.info("server", "Server stopped")
+
+
+app = FastAPI(title="unitree-mcp", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

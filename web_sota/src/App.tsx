@@ -2,6 +2,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 import LLM from "./pages/LLM";
+import Logging from "./pages/Logging";
 
 function Dashboard() {
   return (
@@ -65,6 +66,7 @@ export default function App() {
           <Link to="/help" className="text-gray-600 hover:text-gray-800">Help</Link>
           <Link to="/settings" className="text-gray-600 hover:text-gray-800">Settings</Link>
           <Link to="/llm" className="text-gray-600 hover:text-gray-800">LLM</Link>
+          <Link to="/logging" className="text-gray-600 hover:text-gray-800">Logs</Link>
         </div>
       </nav>
       <Routes>
@@ -74,6 +76,7 @@ export default function App() {
         <Route path="/help" element={<Help />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/llm" element={<LLM />} />
+        <Route path="/logging" element={<Logging />} />
       </Routes>
     </div>
   );
