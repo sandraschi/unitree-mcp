@@ -40,6 +40,7 @@ mcp = FastMCP(name="unitree-mcp")
 # Model discovery
 # ---------------------------------------------------------------------------
 
+
 def _discover_models() -> dict[str, Path]:
     """Discover all available robot models from unitree_robots directory."""
     models = {}
@@ -59,6 +60,7 @@ def _discover_models() -> dict[str, Path]:
 # ---------------------------------------------------------------------------
 # Simulation job manager
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SimJob:
@@ -85,7 +87,9 @@ class SimJob:
             "log_path": str(self.log_path),
         }
         if log_tail_lines > 0 and self.log_path.exists():
-            lines = self.log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            lines = self.log_path.read_text(
+                encoding="utf-8", errors="replace"
+            ).splitlines()
             d["log_tail"] = lines[-log_tail_lines:]
         return d
 
@@ -97,6 +101,7 @@ SIM_CTRL: dict[str, dict[str, Any]] = {}  # per-job state cache
 # ---------------------------------------------------------------------------
 # 9 Sim tools
 # ---------------------------------------------------------------------------
+
 
 @mcp.tool()
 async def sim_status() -> dict[str, Any]:
@@ -119,7 +124,9 @@ async def sim_status() -> dict[str, Any]:
 
 @mcp.tool()
 async def load_model(
-    robot: Annotated[str, Field(description="Robot model name, e.g. 'go2', 'h1', 'g1'.")] = "go2",
+    robot: Annotated[
+        str, Field(description="Robot model name, e.g. 'go2', 'h1', 'g1'.")
+    ] = "go2",
 ) -> dict[str, Any]:
     """Load and validate a Unitree MuJoCo model file without starting the simulator.
 
@@ -135,6 +142,7 @@ async def load_model(
     scene_path = models[robot]
     try:
         import mujoco
+
         model = mujoco.MjModel.from_xml_path(str(scene_path))
         info = {
             "robot": robot,
@@ -151,18 +159,28 @@ async def load_model(
             "joint_names": [model.joint(i).name for i in range(model.njnt)],
             "actuator_names": [model.actuator(i).name for i in range(model.nu)],
         }
-        return {"success": True, "message": f"Model '{robot}' loaded ({model.njnt} joints, {model.nu} actuators).",
-                "data": info}
+        return {
+            "success": True,
+            "message": f"Model '{robot}' loaded ({model.njnt} joints, {model.nu} actuators).",
+            "data": info,
+        }
     except ImportError:
-        return {"success": False, "message": "mujoco not installed. Run: uv pip install mujoco"}
+        return {
+            "success": False,
+            "message": "mujoco not installed. Run: uv pip install mujoco",
+        }
     except Exception as e:
         return {"success": False, "message": f"Failed to load model: {e}"}
 
 
 @mcp.tool()
 async def start_sim(
-    robot: Annotated[str, Field(description="Robot model name, e.g. 'go2', 'h1'.")] = "go2",
-    headless: Annotated[bool, Field(description="Run without GUI viewer if True.")] = False,
+    robot: Annotated[
+        str, Field(description="Robot model name, e.g. 'go2', 'h1'.")
+    ] = "go2",
+    headless: Annotated[
+        bool, Field(description="Run without GUI viewer if True.")
+    ] = False,
 ) -> dict[str, Any]:
     """Start a Unitree MuJoCo simulation as a managed background process.
 
@@ -207,14 +225,24 @@ async def start_sim(
         log_fh.close()
         return {"success": False, "message": f"Failed to launch simulator: {e}"}
 
-    JOBS[job_id] = SimJob(job_id=job_id, robot=robot, model_path=scene_path, proc=proc, log_path=log_path)
+    JOBS[job_id] = SimJob(
+        job_id=job_id, robot=robot, model_path=scene_path, proc=proc, log_path=log_path
+    )
     SIM_CTRL[job_id] = {"state_file": str(LOG_DIR / f"state_{job_id}.json")}
 
     time.sleep(2.0)
     job = JOBS[job_id]
     if job.proc.poll() is not None:
-        return {"success": False, "message": f"Simulator exited immediately ({job.proc.returncode}).", **job.info(log_tail_lines=15)}
-    return {"success": True, "message": f"Simulation started (job {job_id}, robot {robot}).", **job.info()}
+        return {
+            "success": False,
+            "message": f"Simulator exited immediately ({job.proc.returncode}).",
+            **job.info(log_tail_lines=15),
+        }
+    return {
+        "success": True,
+        "message": f"Simulation started (job {job_id}, robot {robot}).",
+        **job.info(),
+    }
 
 
 @mcp.tool()
@@ -224,7 +252,11 @@ async def stop_sim(
     """Stop a running simulation job."""
     job = JOBS.get(job_id)
     if job is None:
-        return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
+        return {
+            "success": False,
+            "message": f"Unknown job '{job_id}'.",
+            "known_jobs": list(JOBS),
+        }
     if job.proc.poll() is None:
         job.proc.terminate()
         try:
@@ -232,7 +264,11 @@ async def stop_sim(
         except subprocess.TimeoutExpired:
             job.proc.kill()
             job.proc.wait(timeout=5)
-    return {"success": True, "message": f"Job {job_id} stopped.", **job.info(log_tail_lines=10)}
+    return {
+        "success": True,
+        "message": f"Job {job_id} stopped.",
+        **job.info(log_tail_lines=10),
+    }
 
 
 @mcp.tool()
@@ -246,9 +282,17 @@ async def get_state(
     """
     job = JOBS.get(job_id)
     if job is None:
-        return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
+        return {
+            "success": False,
+            "message": f"Unknown job '{job_id}'.",
+            "known_jobs": list(JOBS),
+        }
     if job.proc.poll() is not None:
-        return {"success": False, "message": f"Job {job_id} is not running ({job.status()}).", **job.info()}
+        return {
+            "success": False,
+            "message": f"Job {job_id} is not running ({job.status()}).",
+            **job.info(),
+        }
 
     ctrl = SIM_CTRL.get(job_id, {})
     state_file = ctrl.get("state_file")
@@ -263,11 +307,14 @@ async def get_state(
     if not state:
         try:
             import mujoco
+
             model = mujoco.MjModel.from_xml_path(str(job.model_path))
             data = mujoco.MjData(model)
             mujoco.mj_forward(model, data)
             state = {
-                "nq": model.nq, "nv": model.nv, "nu": model.nu,
+                "nq": model.nq,
+                "nv": model.nv,
+                "nu": model.nu,
                 "qpos": data.qpos.tolist()[:10],
                 "qvel": data.qvel.tolist()[:10],
                 "time": data.time,
@@ -276,13 +323,20 @@ async def get_state(
         except ImportError:
             state = {"note": "mujoco not available for live state read"}
 
-    return {"success": True, "message": f"State for job {job_id}.", "robot": job.robot, "state": state}
+    return {
+        "success": True,
+        "message": f"State for job {job_id}.",
+        "robot": job.robot,
+        "state": state,
+    }
 
 
 @mcp.tool()
 async def apply_control(
     job_id: Annotated[str, Field(description="Sim job id.")],
-    ctrl: Annotated[list[float], Field(description="Actuator control values (length = nu).")],
+    ctrl: Annotated[
+        list[float], Field(description="Actuator control values (length = nu).")
+    ],
 ) -> dict[str, Any]:
     """Apply control values to a running simulation.
 
@@ -291,22 +345,38 @@ async def apply_control(
     """
     job = JOBS.get(job_id)
     if job is None:
-        return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
+        return {
+            "success": False,
+            "message": f"Unknown job '{job_id}'.",
+            "known_jobs": list(JOBS),
+        }
     if job.proc.poll() is not None:
-        return {"success": False, "message": f"Job {job_id} is not running.", **job.info()}
+        return {
+            "success": False,
+            "message": f"Job {job_id} is not running.",
+            **job.info(),
+        }
 
-    ctrl_file = SIM_CTRL.get(job_id, {}).get("state_file", str(LOG_DIR / f"ctrl_{job_id}.json"))
+    ctrl_file = SIM_CTRL.get(job_id, {}).get(
+        "state_file", str(LOG_DIR / f"ctrl_{job_id}.json")
+    )
     try:
         Path(ctrl_file).write_text(json.dumps({"ctrl": ctrl, "timestamp": time.time()}))
     except OSError as e:
         return {"success": False, "message": f"Failed to write control: {e}"}
 
-    return {"success": True, "message": f"Control written ({len(ctrl)} actuator values).", "ctrl_values": ctrl}
+    return {
+        "success": True,
+        "message": f"Control written ({len(ctrl)} actuator values).",
+        "ctrl_values": ctrl,
+    }
 
 
 @mcp.tool()
 async def list_models(
-    refresh: Annotated[bool, Field(description="Force re-scan of the unitree_robots directory.")] = False,
+    refresh: Annotated[
+        bool, Field(description="Force re-scan of the unitree_robots directory.")
+    ] = False,
 ) -> dict[str, Any]:
     """List all available Unitree robot models with metadata.
 
@@ -318,34 +388,60 @@ async def list_models(
         size = path.stat().st_size if path.exists() else 0
         robot_dir = UNITREE_ROBOTS / name
         assets_dir = robot_dir / "assets"
-        items.append({
-            "name": name,
-            "model_file": str(path),
-            "size_bytes": size,
-            "has_assets": assets_dir.exists(),
-            "asset_count": len(list(assets_dir.iterdir())) if assets_dir.exists() else 0,
-        })
-    return {"success": True, "message": f"{len(items)} model(s) available.", "models": items}
+        items.append(
+            {
+                "name": name,
+                "model_file": str(path),
+                "size_bytes": size,
+                "has_assets": assets_dir.exists(),
+                "asset_count": len(list(assets_dir.iterdir()))
+                if assets_dir.exists()
+                else 0,
+            }
+        )
+    return {
+        "success": True,
+        "message": f"{len(items)} model(s) available.",
+        "models": items,
+    }
 
 
 @mcp.tool()
 async def list_jobs(
-    job_id: Annotated[str | None, Field(description="Optional: detail view for one job.")] = None,
-    log_tail_lines: Annotated[int, Field(description="Log lines to include.", ge=0, le=200)] = 25,
+    job_id: Annotated[
+        str | None, Field(description="Optional: detail view for one job.")
+    ] = None,
+    log_tail_lines: Annotated[
+        int, Field(description="Log lines to include.", ge=0, le=200)
+    ] = 25,
 ) -> dict[str, Any]:
     """List simulation jobs, or detail one job with its log tail."""
     if job_id is not None:
         job = JOBS.get(job_id)
         if job is None:
-            return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
-        return {"success": True, "message": f"Job {job_id}: {job.status()}.", **job.info(log_tail_lines=log_tail_lines)}
-    return {"success": True, "message": f"{len(JOBS)} job(s) this session.", "jobs": [j.info() for j in JOBS.values()]}
+            return {
+                "success": False,
+                "message": f"Unknown job '{job_id}'.",
+                "known_jobs": list(JOBS),
+            }
+        return {
+            "success": True,
+            "message": f"Job {job_id}: {job.status()}.",
+            **job.info(log_tail_lines=log_tail_lines),
+        }
+    return {
+        "success": True,
+        "message": f"{len(JOBS)} job(s) this session.",
+        "jobs": [j.info() for j in JOBS.values()],
+    }
 
 
 @mcp.tool()
 async def export_frame(
     job_id: Annotated[str, Field(description="Sim job id to export state for.")],
-    format: Annotated[str, Field(description="Export format: 'json', 'urdf'.")] = "json",
+    format: Annotated[
+        str, Field(description="Export format: 'json', 'urdf'.")
+    ] = "json",
 ) -> dict[str, Any]:
     """Export the current sim frame (joint positions, body transforms) for fleet consumption.
 
@@ -354,9 +450,17 @@ async def export_frame(
     """
     job = JOBS.get(job_id)
     if job is None:
-        return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
+        return {
+            "success": False,
+            "message": f"Unknown job '{job_id}'.",
+            "known_jobs": list(JOBS),
+        }
 
-    exchange_dir = Path(os.getenv("FLEET_EXCHANGE_ROOT", "D:/Dev/repos/_exchange")) / "models" / "unitree"
+    exchange_dir = (
+        Path(os.getenv("FLEET_EXCHANGE_ROOT", "D:/Dev/repos/_exchange"))
+        / "models"
+        / "unitree"
+    )
     exchange_dir.mkdir(parents=True, exist_ok=True)
 
     ctrl = SIM_CTRL.get(job_id, {})
@@ -392,6 +496,7 @@ async def export_frame(
 # 5 AI tools
 # ---------------------------------------------------------------------------
 
+
 def _extract_json(text: str) -> dict | None:
     for m in re.finditer(r"\{[^{}]*\}", text):
         try:
@@ -412,7 +517,12 @@ def _extract_json_array(text: str) -> list:
 
 @mcp.tool()
 async def agentic_sim_workflow(
-    goal: Annotated[str, Field(description="Natural language goal, e.g. 'Start a Go2 sim and make it walk'.")],
+    goal: Annotated[
+        str,
+        Field(
+            description="Natural language goal, e.g. 'Start a Go2 sim and make it walk'."
+        ),
+    ],
     ctx: Context,
 ) -> dict[str, Any]:
     """Execute an autonomous multi-step simulation workflow using the host LLM.
@@ -442,23 +552,43 @@ After completion, summarize what happened and any observations."""
     try:
         result = await ctx.sample(prompt)
         text = getattr(result, "text", None) or str(result)
-        return {"success": True, "message": "Workflow completed.", "plan_and_result": text.strip(), "sampling_used": True}
+        return {
+            "success": True,
+            "message": "Workflow completed.",
+            "plan_and_result": text.strip(),
+            "sampling_used": True,
+        }
     except Exception as e:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": prompt, "stream": False},
                 timeout=120,
             )
-            return {"success": True, "message": "Workflow completed (Ollama).", "plan_and_result": resp.json().get("response", ""), "sampling_used": False, "model": "ollama"}
+            return {
+                "success": True,
+                "message": "Workflow completed (Ollama).",
+                "plan_and_result": resp.json().get("response", ""),
+                "sampling_used": False,
+                "model": "ollama",
+            }
         except Exception as ollama_e:
-            return {"success": False, "message": f"Both sampling and Ollama fallback failed: {e}; {ollama_e}"}
+            return {
+                "success": False,
+                "message": f"Both sampling and Ollama fallback failed: {e}; {ollama_e}",
+            }
 
 
 @mcp.tool()
 async def natural_language_control(
-    prompt: Annotated[str, Field(description="Natural language command, e.g. 'bend the right knee 30 degrees'.")],
+    prompt: Annotated[
+        str,
+        Field(
+            description="Natural language command, e.g. 'bend the right knee 30 degrees'."
+        ),
+    ],
     job_id: Annotated[str, Field(description="Active sim job id.")],
     ctx: Context,
 ) -> dict[str, Any]:
@@ -469,12 +599,17 @@ async def natural_language_control(
     """
     job = JOBS.get(job_id)
     if job is None:
-        return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
+        return {
+            "success": False,
+            "message": f"Unknown job '{job_id}'.",
+            "known_jobs": list(JOBS),
+        }
 
     # Read model info for actuator names
     actuator_names = []
     try:
         import mujoco
+
         model = mujoco.MjModel.from_xml_path(str(job.model_path))
         actuator_names = [model.actuator(i).name for i in range(model.nu)]
     except Exception:
@@ -497,6 +632,7 @@ Example: {{"hip_joint": 0.5, "knee_joint": -0.3}}"""
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": nl_prompt, "stream": False},
@@ -508,7 +644,11 @@ Example: {{"hip_joint": 0.5, "knee_joint": -0.3}}"""
 
     ctrl = _extract_json(text)
     if not ctrl:
-        return {"success": False, "message": "Could not parse LLM output as actuator commands.", "raw_llm_output": text}
+        return {
+            "success": False,
+            "message": "Could not parse LLM output as actuator commands.",
+            "raw_llm_output": text,
+        }
 
     ctrl_file = LOG_DIR / f"ctrl_{job_id}.json"
     try:
@@ -516,7 +656,12 @@ Example: {{"hip_joint": 0.5, "knee_joint": -0.3}}"""
     except OSError:
         pass
 
-    return {"success": True, "message": f"Generated {len(ctrl)} actuator commands.", "controls": ctrl, "source": "sampling" if sampling_used else "ollama"}
+    return {
+        "success": True,
+        "message": f"Generated {len(ctrl)} actuator commands.",
+        "controls": ctrl,
+        "source": "sampling" if sampling_used else "ollama",
+    }
 
 
 @mcp.tool()
@@ -527,15 +672,24 @@ async def analyze_sim_state(
     """Read the current sim state and produce a natural-language analysis."""
     job = JOBS.get(job_id)
     if job is None:
-        return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
+        return {
+            "success": False,
+            "message": f"Unknown job '{job_id}'.",
+            "known_jobs": list(JOBS),
+        }
 
-    state_info = {"robot": job.robot, "status": job.status(), "uptime_s": round(time.time() - job.started_at, 1), "note": "State not available without running sim with state output enabled"}
+    state_info = {
+        "robot": job.robot,
+        "status": job.status(),
+        "uptime_s": round(time.time() - job.started_at, 1),
+        "note": "State not available without running sim with state output enabled",
+    }
 
     analyze_prompt = f"""You are a robotics analyst. Given this robot information, describe what the robot is doing.
 
 Robot model: {job.robot}
 Job status: {job.status()}
-Uptime: {state_info['uptime_s']}s
+Uptime: {state_info["uptime_s"]}s
 
 Describe in plain English:
 1. What kind of robot is this (quadruped, humanoid, etc.)?
@@ -546,16 +700,33 @@ Describe in plain English:
     try:
         result = await ctx.sample(analyze_prompt)
         text = getattr(result, "text", None) or str(result)
-        return {"success": True, "message": "State analyzed.", "analysis": text.strip(), "robot": job.robot, "sampling_used": True}
+        return {
+            "success": True,
+            "message": "State analyzed.",
+            "analysis": text.strip(),
+            "robot": job.robot,
+            "sampling_used": True,
+        }
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
-                json={"model": "llama3.2:3b", "prompt": analyze_prompt, "stream": False},
+                json={
+                    "model": "llama3.2:3b",
+                    "prompt": analyze_prompt,
+                    "stream": False,
+                },
                 timeout=30,
             )
-            return {"success": True, "message": "State analyzed (Ollama).", "analysis": resp.json().get("response", ""), "robot": job.robot, "sampling_used": False}
+            return {
+                "success": True,
+                "message": "State analyzed (Ollama).",
+                "analysis": resp.json().get("response", ""),
+                "robot": job.robot,
+                "sampling_used": False,
+            }
         except Exception as e:
             return {"success": False, "message": f"LLM unavailable: {e}"}
 
@@ -568,7 +739,11 @@ async def analyze_sim_logs(
     """Read the sim log file and ask the LLM for root-cause analysis."""
     job = JOBS.get(job_id)
     if job is None:
-        return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
+        return {
+            "success": False,
+            "message": f"Unknown job '{job_id}'.",
+            "known_jobs": list(JOBS),
+        }
     if not job.log_path.exists():
         return {"success": False, "message": f"Log file not found at {job.log_path}."}
 
@@ -592,23 +767,36 @@ Provide:
     try:
         result = await ctx.sample(log_prompt)
         text = getattr(result, "text", None) or str(result)
-        return {"success": True, "message": "Logs analyzed.", "analysis": text.strip(), "sampling_used": True}
+        return {
+            "success": True,
+            "message": "Logs analyzed.",
+            "analysis": text.strip(),
+            "sampling_used": True,
+        }
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": log_prompt, "stream": False},
                 timeout=30,
             )
-            return {"success": True, "message": "Logs analyzed (Ollama).", "analysis": resp.json().get("response", ""), "sampling_used": False}
+            return {
+                "success": True,
+                "message": "Logs analyzed (Ollama).",
+                "analysis": resp.json().get("response", ""),
+                "sampling_used": False,
+            }
         except Exception as e:
             return {"success": False, "message": f"LLM unavailable: {e}"}
 
 
 @mcp.tool()
 async def discover_model(
-    description: Annotated[str, Field(description="Description, e.g. 'Unitree H1 humanoid MuJoCo model'.")],
+    description: Annotated[
+        str, Field(description="Description, e.g. 'Unitree H1 humanoid MuJoCo model'.")
+    ],
     ctx: Context,
 ) -> dict[str, Any]:
     """Search for and download a MuJoCo MJCF/XML model given a natural-language description.
@@ -629,6 +817,7 @@ Example: ["https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/main
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": prompt, "stream": False},
@@ -639,7 +828,10 @@ Example: ["https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/main
             return {"success": False, "message": "LLM unavailable for model discovery."}
 
     if not urls:
-        return {"success": False, "message": "Could not generate model URLs from description."}
+        return {
+            "success": False,
+            "message": "Could not generate model URLs from description.",
+        }
 
     models_dir = Path("D:/Dev/repos/unitree-mcp/models")
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -647,6 +839,7 @@ Example: ["https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/main
     for url in urls[:3]:
         try:
             import httpx as httpx_mod
+
             resp = httpx_mod.get(url, follow_redirects=True, timeout=30)
             if resp.status_code == 200 and b"<mujoco" in resp.content[:500]:
                 name = url.split("/")[-1].replace(".xml", "")
@@ -658,7 +851,9 @@ Example: ["https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/main
 
     return {
         "success": len(loaded) > 0,
-        "message": f"Loaded {len(loaded)}/{len(urls)} models." if loaded else "No models could be downloaded.",
+        "message": f"Loaded {len(loaded)}/{len(urls)} models."
+        if loaded
+        else "No models could be downloaded.",
         "models_loaded": loaded,
         "urls_tried": urls,
     }

@@ -20,6 +20,7 @@ def mock_subprocess(mocker):
 @pytest.fixture(autouse=True)
 def clear_jobs():
     import unitree_mcp.server as server_mod
+
     server_mod.JOBS.clear()
     yield
     server_mod.JOBS.clear()

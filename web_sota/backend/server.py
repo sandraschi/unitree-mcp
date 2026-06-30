@@ -10,13 +10,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from web_sota.backend.routes.sim import router as sim_router
-from web_sota.backend.routes.models import router as models_router
-from web_sota.backend.routes.logging import router as logging_router
-from web_sota.backend.routes.llm import router as llm_router
-from web_sota.backend.routes.settings import router as settings_router
-from web_sota.backend.routes.ai import router as ai_router
 from web_sota.backend.log_buffer import activity_log
+from web_sota.backend.routes.ai import router as ai_router
+from web_sota.backend.routes.llm import router as llm_router
+from web_sota.backend.routes.logging import router as logging_router
+from web_sota.backend.routes.models import router as models_router
+from web_sota.backend.routes.settings import router as settings_router
+from web_sota.backend.routes.sim import router as sim_router
 
 
 @asynccontextmanager
@@ -64,17 +64,29 @@ if dist_dir.exists():
 
 def run_dev() -> None:
     import uvicorn
-    uvicorn.run("web_sota.backend.server:app", host="127.0.0.1", port=11052, log_level="info", reload=True)
+
+    uvicorn.run(
+        "web_sota.backend.server:app",
+        host="127.0.0.1",
+        port=11052,
+        log_level="info",
+        reload=True,
+    )
 
 
 if __name__ == "__main__":
     run_dev()
 
+
 @app.get("/api/llm/providers")
 async def llm_providers():
     import httpx
+
     result = {}
-    for name, url in [("ollama", "http://127.0.0.1:11434/api/tags"), ("lm_studio", "http://127.0.0.1:1234/v1/models")]:
+    for name, url in [
+        ("ollama", "http://127.0.0.1:11434/api/tags"),
+        ("lm_studio", "http://127.0.0.1:1234/v1/models"),
+    ]:
         try:
             r = httpx.get(url, timeout=3)
             if r.status_code == 200:
@@ -90,4 +102,3 @@ async def llm_providers():
     if not any(result.values()):
         result["ollama"] = [{"name": "llama3.2:3b"}]
     return result
-

@@ -4,6 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "src"))
 
 from fastapi import APIRouter
+
 from unitree_mcp.server import list_models, load_model
 
 router = APIRouter(tags=["Models"], prefix="/api/models")

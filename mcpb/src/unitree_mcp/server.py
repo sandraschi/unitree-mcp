@@ -40,6 +40,7 @@ mcp = FastMCP(name="unitree-mcp")
 # Model discovery
 # ---------------------------------------------------------------------------
 
+
 def _discover_models() -> dict[str, Path]:
     """Discover all available robot models from unitree_robots directory."""
     models = {}
@@ -59,6 +60,7 @@ def _discover_models() -> dict[str, Path]:
 # ---------------------------------------------------------------------------
 # Simulation job manager
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SimJob:
@@ -98,6 +100,7 @@ SIM_CTRL: dict[str, dict[str, Any]] = {}  # per-job state cache
 # 9 Sim tools
 # ---------------------------------------------------------------------------
 
+
 @mcp.tool()
 async def sim_status() -> dict[str, Any]:
     """Health check: Unitree repos, available models, running jobs."""
@@ -135,6 +138,7 @@ async def load_model(
     scene_path = models[robot]
     try:
         import mujoco
+
         model = mujoco.MjModel.from_xml_path(str(scene_path))
         info = {
             "robot": robot,
@@ -151,8 +155,11 @@ async def load_model(
             "joint_names": [model.joint(i).name for i in range(model.njnt)],
             "actuator_names": [model.actuator(i).name for i in range(model.nu)],
         }
-        return {"success": True, "message": f"Model '{robot}' loaded ({model.njnt} joints, {model.nu} actuators).",
-                "data": info}
+        return {
+            "success": True,
+            "message": f"Model '{robot}' loaded ({model.njnt} joints, {model.nu} actuators).",
+            "data": info,
+        }
     except ImportError:
         return {"success": False, "message": "mujoco not installed. Run: uv pip install mujoco"}
     except Exception as e:
@@ -213,7 +220,11 @@ async def start_sim(
     time.sleep(2.0)
     job = JOBS[job_id]
     if job.proc.poll() is not None:
-        return {"success": False, "message": f"Simulator exited immediately ({job.proc.returncode}).", **job.info(log_tail_lines=15)}
+        return {
+            "success": False,
+            "message": f"Simulator exited immediately ({job.proc.returncode}).",
+            **job.info(log_tail_lines=15),
+        }
     return {"success": True, "message": f"Simulation started (job {job_id}, robot {robot}).", **job.info()}
 
 
@@ -263,11 +274,14 @@ async def get_state(
     if not state:
         try:
             import mujoco
+
             model = mujoco.MjModel.from_xml_path(str(job.model_path))
             data = mujoco.MjData(model)
             mujoco.mj_forward(model, data)
             state = {
-                "nq": model.nq, "nv": model.nv, "nu": model.nu,
+                "nq": model.nq,
+                "nv": model.nv,
+                "nu": model.nu,
                 "qpos": data.qpos.tolist()[:10],
                 "qvel": data.qvel.tolist()[:10],
                 "time": data.time,
@@ -318,13 +332,15 @@ async def list_models(
         size = path.stat().st_size if path.exists() else 0
         robot_dir = UNITREE_ROBOTS / name
         assets_dir = robot_dir / "assets"
-        items.append({
-            "name": name,
-            "model_file": str(path),
-            "size_bytes": size,
-            "has_assets": assets_dir.exists(),
-            "asset_count": len(list(assets_dir.iterdir())) if assets_dir.exists() else 0,
-        })
+        items.append(
+            {
+                "name": name,
+                "model_file": str(path),
+                "size_bytes": size,
+                "has_assets": assets_dir.exists(),
+                "asset_count": len(list(assets_dir.iterdir())) if assets_dir.exists() else 0,
+            }
+        )
     return {"success": True, "message": f"{len(items)} model(s) available.", "models": items}
 
 
@@ -392,6 +408,7 @@ async def export_frame(
 # 5 AI tools
 # ---------------------------------------------------------------------------
 
+
 def _extract_json(text: str) -> dict | None:
     for m in re.finditer(r"\{[^{}]*\}", text):
         try:
@@ -442,16 +459,28 @@ After completion, summarize what happened and any observations."""
     try:
         result = await ctx.sample(prompt)
         text = getattr(result, "text", None) or str(result)
-        return {"success": True, "message": "Workflow completed.", "plan_and_result": text.strip(), "sampling_used": True}
+        return {
+            "success": True,
+            "message": "Workflow completed.",
+            "plan_and_result": text.strip(),
+            "sampling_used": True,
+        }
     except Exception as e:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": prompt, "stream": False},
                 timeout=120,
             )
-            return {"success": True, "message": "Workflow completed (Ollama).", "plan_and_result": resp.json().get("response", ""), "sampling_used": False, "model": "ollama"}
+            return {
+                "success": True,
+                "message": "Workflow completed (Ollama).",
+                "plan_and_result": resp.json().get("response", ""),
+                "sampling_used": False,
+                "model": "ollama",
+            }
         except Exception as ollama_e:
             return {"success": False, "message": f"Both sampling and Ollama fallback failed: {e}; {ollama_e}"}
 
@@ -475,6 +504,7 @@ async def natural_language_control(
     actuator_names = []
     try:
         import mujoco
+
         model = mujoco.MjModel.from_xml_path(str(job.model_path))
         actuator_names = [model.actuator(i).name for i in range(model.nu)]
     except Exception:
@@ -497,6 +527,7 @@ Example: {{"hip_joint": 0.5, "knee_joint": -0.3}}"""
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": nl_prompt, "stream": False},
@@ -516,7 +547,12 @@ Example: {{"hip_joint": 0.5, "knee_joint": -0.3}}"""
     except OSError:
         pass
 
-    return {"success": True, "message": f"Generated {len(ctrl)} actuator commands.", "controls": ctrl, "source": "sampling" if sampling_used else "ollama"}
+    return {
+        "success": True,
+        "message": f"Generated {len(ctrl)} actuator commands.",
+        "controls": ctrl,
+        "source": "sampling" if sampling_used else "ollama",
+    }
 
 
 @mcp.tool()
@@ -529,13 +565,18 @@ async def analyze_sim_state(
     if job is None:
         return {"success": False, "message": f"Unknown job '{job_id}'.", "known_jobs": list(JOBS)}
 
-    state_info = {"robot": job.robot, "status": job.status(), "uptime_s": round(time.time() - job.started_at, 1), "note": "State not available without running sim with state output enabled"}
+    state_info = {
+        "robot": job.robot,
+        "status": job.status(),
+        "uptime_s": round(time.time() - job.started_at, 1),
+        "note": "State not available without running sim with state output enabled",
+    }
 
     analyze_prompt = f"""You are a robotics analyst. Given this robot information, describe what the robot is doing.
 
 Robot model: {job.robot}
 Job status: {job.status()}
-Uptime: {state_info['uptime_s']}s
+Uptime: {state_info["uptime_s"]}s
 
 Describe in plain English:
 1. What kind of robot is this (quadruped, humanoid, etc.)?
@@ -546,16 +587,29 @@ Describe in plain English:
     try:
         result = await ctx.sample(analyze_prompt)
         text = getattr(result, "text", None) or str(result)
-        return {"success": True, "message": "State analyzed.", "analysis": text.strip(), "robot": job.robot, "sampling_used": True}
+        return {
+            "success": True,
+            "message": "State analyzed.",
+            "analysis": text.strip(),
+            "robot": job.robot,
+            "sampling_used": True,
+        }
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": analyze_prompt, "stream": False},
                 timeout=30,
             )
-            return {"success": True, "message": "State analyzed (Ollama).", "analysis": resp.json().get("response", ""), "robot": job.robot, "sampling_used": False}
+            return {
+                "success": True,
+                "message": "State analyzed (Ollama).",
+                "analysis": resp.json().get("response", ""),
+                "robot": job.robot,
+                "sampling_used": False,
+            }
         except Exception as e:
             return {"success": False, "message": f"LLM unavailable: {e}"}
 
@@ -596,12 +650,18 @@ Provide:
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": log_prompt, "stream": False},
                 timeout=30,
             )
-            return {"success": True, "message": "Logs analyzed (Ollama).", "analysis": resp.json().get("response", ""), "sampling_used": False}
+            return {
+                "success": True,
+                "message": "Logs analyzed (Ollama).",
+                "analysis": resp.json().get("response", ""),
+                "sampling_used": False,
+            }
         except Exception as e:
             return {"success": False, "message": f"LLM unavailable: {e}"}
 
@@ -629,6 +689,7 @@ Example: ["https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/main
     except Exception:
         try:
             import httpx
+
             resp = httpx.post(
                 "http://127.0.0.1:11434/api/generate",
                 json={"model": "llama3.2:3b", "prompt": prompt, "stream": False},
@@ -647,6 +708,7 @@ Example: ["https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/main
     for url in urls[:3]:
         try:
             import httpx as httpx_mod
+
             resp = httpx_mod.get(url, follow_redirects=True, timeout=30)
             if resp.status_code == 200 and b"<mujoco" in resp.content[:500]:
                 name = url.split("/")[-1].replace(".xml", "")
