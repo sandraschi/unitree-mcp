@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_BASE } from "../lib/api";
 
 export default function Settings() {
   const [providers, setProviders] = useState<Record<string, any[]>>({});
@@ -7,7 +8,7 @@ export default function Settings() {
   const [testResult, setTestResult] = useState("");
 
   useEffect(() => {
-    fetch("/api/llm/providers")
+    fetch(API_BASE + "/api/llm/providers")
       .then((r) => r.json())
       .then((d) => {
         setProviders(d);
@@ -18,7 +19,7 @@ export default function Settings() {
           setSelectedModel(savedModel);
         }
       })
-      .catch(() => setProviders({ ollama: [{name:"llama3.2:3b"}] }));
+      .catch(() => setProviders({}));
   }, []);
 
   const saveLlmConfig = (provider: string, model: string) => {
@@ -31,7 +32,7 @@ export default function Settings() {
   const testConnection = async () => {
     setTestResult("Testing...");
     try {
-      const r = await fetch("/api/llm/chat", {
+      const r = await fetch(API_BASE + "/api/llm/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider: selectedProvider, model: selectedModel, prompt: "Hello, respond with just: OK" }),

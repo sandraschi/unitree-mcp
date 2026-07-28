@@ -3,6 +3,7 @@ import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 import LLM from "./pages/LLM";
 import Logging from "./pages/Logging";
+import FloatingChat from "./components/FloatingChat";
 
 function Dashboard() {
   return (
@@ -78,6 +79,7 @@ export default function App() {
         <Route path="/llm" element={<LLM />} />
         <Route path="/logging" element={<Logging />} />
       </Routes>
+      <FloatingChat />
     </div>
   );
 }

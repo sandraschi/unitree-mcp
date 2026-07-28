@@ -87,9 +87,7 @@ class SimJob:
             "log_path": str(self.log_path),
         }
         if log_tail_lines > 0 and self.log_path.exists():
-            lines = self.log_path.read_text(
-                encoding="utf-8", errors="replace"
-            ).splitlines()
+            lines = self.log_path.read_text(encoding="utf-8", errors="replace").splitlines()
             d["log_tail"] = lines[-log_tail_lines:]
         return d
 
@@ -124,9 +122,7 @@ async def sim_status() -> dict[str, Any]:
 
 @mcp.tool()
 async def load_model(
-    robot: Annotated[
-        str, Field(description="Robot model name, e.g. 'go2', 'h1', 'g1'.")
-    ] = "go2",
+    robot: Annotated[str, Field(description="Robot model name, e.g. 'go2', 'h1', 'g1'.")] = "go2",
 ) -> dict[str, Any]:
     """Load and validate a Unitree MuJoCo model file without starting the simulator.
 
@@ -175,12 +171,8 @@ async def load_model(
 
 @mcp.tool()
 async def start_sim(
-    robot: Annotated[
-        str, Field(description="Robot model name, e.g. 'go2', 'h1'.")
-    ] = "go2",
-    headless: Annotated[
-        bool, Field(description="Run without GUI viewer if True.")
-    ] = False,
+    robot: Annotated[str, Field(description="Robot model name, e.g. 'go2', 'h1'.")] = "go2",
+    headless: Annotated[bool, Field(description="Run without GUI viewer if True.")] = False,
 ) -> dict[str, Any]:
     """Start a Unitree MuJoCo simulation as a managed background process.
 
@@ -334,9 +326,7 @@ async def get_state(
 @mcp.tool()
 async def apply_control(
     job_id: Annotated[str, Field(description="Sim job id.")],
-    ctrl: Annotated[
-        list[float], Field(description="Actuator control values (length = nu).")
-    ],
+    ctrl: Annotated[list[float], Field(description="Actuator control values (length = nu).")],
 ) -> dict[str, Any]:
     """Apply control values to a running simulation.
 
@@ -357,9 +347,7 @@ async def apply_control(
             **job.info(),
         }
 
-    ctrl_file = SIM_CTRL.get(job_id, {}).get(
-        "state_file", str(LOG_DIR / f"ctrl_{job_id}.json")
-    )
+    ctrl_file = SIM_CTRL.get(job_id, {}).get("state_file", str(LOG_DIR / f"ctrl_{job_id}.json"))
     try:
         Path(ctrl_file).write_text(json.dumps({"ctrl": ctrl, "timestamp": time.time()}))
     except OSError as e:
@@ -394,9 +382,7 @@ async def list_models(
                 "model_file": str(path),
                 "size_bytes": size,
                 "has_assets": assets_dir.exists(),
-                "asset_count": len(list(assets_dir.iterdir()))
-                if assets_dir.exists()
-                else 0,
+                "asset_count": len(list(assets_dir.iterdir())) if assets_dir.exists() else 0,
             }
         )
     return {
@@ -408,12 +394,8 @@ async def list_models(
 
 @mcp.tool()
 async def list_jobs(
-    job_id: Annotated[
-        str | None, Field(description="Optional: detail view for one job.")
-    ] = None,
-    log_tail_lines: Annotated[
-        int, Field(description="Log lines to include.", ge=0, le=200)
-    ] = 25,
+    job_id: Annotated[str | None, Field(description="Optional: detail view for one job.")] = None,
+    log_tail_lines: Annotated[int, Field(description="Log lines to include.", ge=0, le=200)] = 25,
 ) -> dict[str, Any]:
     """List simulation jobs, or detail one job with its log tail."""
     if job_id is not None:
@@ -439,9 +421,7 @@ async def list_jobs(
 @mcp.tool()
 async def export_frame(
     job_id: Annotated[str, Field(description="Sim job id to export state for.")],
-    format: Annotated[
-        str, Field(description="Export format: 'json', 'urdf'.")
-    ] = "json",
+    format: Annotated[str, Field(description="Export format: 'json', 'urdf'.")] = "json",
 ) -> dict[str, Any]:
     """Export the current sim frame (joint positions, body transforms) for fleet consumption.
 
@@ -457,9 +437,7 @@ async def export_frame(
         }
 
     exchange_dir = (
-        Path(os.getenv("FLEET_EXCHANGE_ROOT", "D:/Dev/repos/_exchange"))
-        / "models"
-        / "unitree"
+        Path(os.getenv("FLEET_EXCHANGE_ROOT", "D:/Dev/repos/_exchange")) / "models" / "unitree"
     )
     exchange_dir.mkdir(parents=True, exist_ok=True)
 
@@ -519,9 +497,7 @@ def _extract_json_array(text: str) -> list:
 async def agentic_sim_workflow(
     goal: Annotated[
         str,
-        Field(
-            description="Natural language goal, e.g. 'Start a Go2 sim and make it walk'."
-        ),
+        Field(description="Natural language goal, e.g. 'Start a Go2 sim and make it walk'."),
     ],
     ctx: Context,
 ) -> dict[str, Any]:
@@ -585,9 +561,7 @@ After completion, summarize what happened and any observations."""
 async def natural_language_control(
     prompt: Annotated[
         str,
-        Field(
-            description="Natural language command, e.g. 'bend the right knee 30 degrees'."
-        ),
+        Field(description="Natural language command, e.g. 'bend the right knee 30 degrees'."),
     ],
     job_id: Annotated[str, Field(description="Active sim job id.")],
     ctx: Context,

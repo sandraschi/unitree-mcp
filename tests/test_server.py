@@ -23,9 +23,7 @@ async def test_sim_status_empty(mocker):
     import unitree_mcp.server as server_mod
 
     mocker.patch.object(server_mod, "_discover_models", return_value={})
-    mocker.patch.object(
-        server_mod, "UNITREE_MUJOCO", mocker.MagicMock(exists=lambda: True)
-    )
+    mocker.patch.object(server_mod, "UNITREE_MUJOCO", mocker.MagicMock(exists=lambda: True))
     mocker.patch.object(server_mod, "ROS2_REPO", mocker.MagicMock(exists=lambda: True))
 
     result = await server_mod.sim_status()
@@ -40,9 +38,7 @@ async def test_sim_status_with_models(mocker):
 
     fake = mocker.MagicMock(exists=lambda: True)
     mocker.patch.object(server_mod, "_discover_models", return_value={"go2": fake})
-    mocker.patch.object(
-        server_mod, "UNITREE_MUJOCO", mocker.MagicMock(exists=lambda: True)
-    )
+    mocker.patch.object(server_mod, "UNITREE_MUJOCO", mocker.MagicMock(exists=lambda: True))
     mocker.patch.object(server_mod, "ROS2_REPO", mocker.MagicMock(exists=lambda: True))
 
     result = await server_mod.sim_status()
@@ -143,9 +139,7 @@ async def test_load_model_not_found(mocker):
     """Unknown model returns error with alternatives."""
     import unitree_mcp.server as server_mod
 
-    mocker.patch.object(
-        server_mod, "_discover_models", return_value={"go2": mocker.MagicMock()}
-    )
+    mocker.patch.object(server_mod, "_discover_models", return_value={"go2": mocker.MagicMock()})
     result = await server_mod.load_model(robot="mars")
     assert result["success"] is False
     assert "available_models" in result

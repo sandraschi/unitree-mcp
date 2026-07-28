@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { API_BASE } from "../lib/api";
 
 const quickActions = [
   { title: "Start Sim", prompt: "Start a simulation with a Go2 robot" },
@@ -27,7 +28,7 @@ export default function LLM() {
     setSelectedProvider(savedProvider);
     setSelectedModel(savedModel);
 
-    fetch("/api/llm/providers")
+    fetch(API_BASE + "/api/llm/providers")
       .then((r) => r.json())
       .then((d) => {
         if (d.ollama) {
@@ -38,7 +39,7 @@ export default function LLM() {
           }
         }
       })
-      .catch(() => setProviders(["llama3.2:3b"]));
+      .catch(() => setProviders([]));
   }, []);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export default function LLM() {
     setChat((prev) => [...prev, { role: "user", content: prompt }]);
     setLoading(true);
     try {
-      const r = await fetch("/api/llm/chat", {
+      const r = await fetch(API_BASE + "/api/llm/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider: selectedProvider, model: selectedModel, prompt }),
