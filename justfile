@@ -11,10 +11,10 @@ serve:
     uv run python -m unitree_mcp
 
 lint:
-    ruff check src/ web_sota/backend/
+    uv run ruff check src/ web_sota/backend/
 
 fix:
-    ruff check --fix src/ web_sota/backend/
+    uv run ruff check --fix src/ web_sota/backend/
 
 test:
     uv run pytest tests/ -q
@@ -37,3 +37,5 @@ unitree-mujoco:
 
 go2-info:
     uv run python -c "from pathlib import Path; p = Path('D:/Dev/repos/external/unitree_mujoco/data/go2/go2.xml'); print(f'Go2 model: {p.stat().st_size} bytes') if p.exists() else print('Go2 model not found')"
+
+# Bootstrap: install dev deps + pre-commit hook
