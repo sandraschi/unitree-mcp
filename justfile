@@ -3,7 +3,6 @@ set windows-shell := ["powershell.exe", "-NoProfile", "-Command"]
 import 'scripts/just/fleet.just'
 
 # === Fleet-standard ===
-    uv run python -c "from pathlib import Path; p = Path('D:/Dev/repos/external/unitree_mujoco/data/go2/go2.xml'); print(f'Go2 model: {p.stat().st_size} bytes') if p.exists() else print('Go2 model not found')"
 bootstrap:
     uv sync
 
