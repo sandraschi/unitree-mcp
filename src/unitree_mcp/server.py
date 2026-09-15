@@ -1,4 +1,4 @@
-"""unitree-mcp — FastMCP 3.2 wrapper for Unitree Robotics open-source robotics stack.
+"""unitree-mcp - FastMCP 3.2 wrapper for Unitree Robotics open-source robotics stack.
 
 Wraps Unitree MuJoCo models (Go2, H1, H1-2, G1, B2, etc.) and ROS 2 packages
 as MCP tools. MuJoCo simulations run as managed background processes.
@@ -13,6 +13,7 @@ Robot models available:
   go2, go2w, b2, b2w, h1, h1_2, g1, h2, a2, r1
 """
 
+import asyncio
 import json
 import os
 import re
@@ -222,7 +223,7 @@ async def start_sim(
     )
     SIM_CTRL[job_id] = {"state_file": str(LOG_DIR / f"state_{job_id}.json")}
 
-    time.sleep(2.0)
+    await asyncio.sleep(2.0)
     job = JOBS[job_id]
     if job.proc.poll() is not None:
         return {
@@ -267,7 +268,7 @@ async def stop_sim(
 async def get_state(
     job_id: Annotated[str, Field(description="Sim job id.")],
 ) -> dict[str, Any]:
-    """Get current sim state — joint positions, velocities, actuator forces, body positions.
+    """Get current sim state - joint positions, velocities, actuator forces, body positions.
 
     Reads from the shared memory state file if available, or returns the last
     known state from the job's state cache.
@@ -508,15 +509,15 @@ async def agentic_sim_workflow(
     """
     tools_desc = """
 Available tools (invoke with JSON):
-- sim_status() — health check
-- load_model(robot) — validate model file
-- start_sim(robot, headless) — launch MuJoCo sim, returns job_id
-- stop_sim(job_id) — terminate sim
-- get_state(job_id) — read joint positions/velocities
-- apply_control(job_id, ctrl) — write actuator values
-- list_models(refresh) — discover available robot models
-- list_jobs(job_id, log_tail_lines) — query job status
-- export_frame(job_id, format) — export frame data for fleet
+- sim_status() - health check
+- load_model(robot) - validate model file
+- start_sim(robot, headless) - launch MuJoCo sim, returns job_id
+- stop_sim(job_id) - terminate sim
+- get_state(job_id) - read joint positions/velocities
+- apply_control(job_id, ctrl) - write actuator values
+- list_models(refresh) - discover available robot models
+- list_jobs(job_id, log_tail_lines) - query job status
+- export_frame(job_id, format) - export frame data for fleet
 """
     prompt = f"""You are a robotics simulation engineer. Your goal: {goal}
 
