@@ -27,11 +27,14 @@ from typing import Annotated, Any
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
-EXTERNAL = Path(os.getenv("UNITREE_EXTERNAL_DIR", "D:/Dev/repos/external"))
+# Repo checkout root (src/unitree_mcp/server.py -> parents[2]); upstream repos
+# are cloned into an "external" dir next to it.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+EXTERNAL = Path(os.getenv("UNITREE_EXTERNAL_DIR", str(_REPO_ROOT.parent / "external")))
 UNITREE_MUJOCO = EXTERNAL / "unitree_mujoco"
 UNITREE_ROBOTS = UNITREE_MUJOCO / "unitree_robots"
 SIM_PYTHON = Path(os.getenv("UNITREE_SIM_PYTHON", "python"))
-LOG_DIR = Path(os.getenv("UNITREE_LOG_DIR", "D:/Dev/repos/unitree-mcp/logs"))
+LOG_DIR = Path(os.getenv("UNITREE_LOG_DIR", str(_REPO_ROOT / "logs")))
 ROS2_SDK = EXTERNAL / "go2_ros2_sdk"
 ROS2_REPO = EXTERNAL / "unitree_ros2"
 
@@ -438,7 +441,9 @@ async def export_frame(
         }
 
     exchange_dir = (
-        Path(os.getenv("FLEET_EXCHANGE_ROOT", "D:/Dev/repos/_exchange")) / "models" / "unitree"
+        Path(os.getenv("FLEET_EXCHANGE_ROOT", str(_REPO_ROOT.parent / "_exchange")))
+        / "models"
+        / "unitree"
     )
     exchange_dir.mkdir(parents=True, exist_ok=True)
 
@@ -813,7 +818,7 @@ Example: ["https://raw.githubusercontent.com/unitreerobotics/unitree_mujoco/main
             "message": "Could not generate model URLs from description.",
         }
 
-    models_dir = Path("D:/Dev/repos/unitree-mcp/models")
+    models_dir = _REPO_ROOT / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
     loaded = []
     for url in urls[:3]:
